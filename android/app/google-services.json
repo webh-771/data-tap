@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "790734028196",
+    "project_id": "datatap-ba008",
+    "storage_bucket": "datatap-ba008.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790734028196:android:9ae537924c196cb7a65531",
+        "android_client_info": {
+          "package_name": "com.example.learning"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoIJoewjqLexQWLU2HI59MXMlU4V65S-k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
