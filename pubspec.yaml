@@ -28,7 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  intl: ^0.20.1
+  intl: 0.19.0
   flutter:
     sdk: flutter
   nfc_manager: ^3.5.0
@@ -36,6 +36,7 @@ dependencies:
   firebase_auth: ^5.4.1
   google_fonts: ^6.2.1
   cloud_firestore: ^5.6.2
+  local_auth: ^2.3.0
 
 
 

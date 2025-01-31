@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 
 class WritePage extends StatelessWidget {
-  final Map<String, String> profileData;
-
-  const WritePage({super.key, required this.profileData});
+  const WritePage({super.key, required this.uid});
+  final String uid;
 
   Future<void> _writeToNfc(BuildContext context) async {
     bool isAvailable = await NfcManager.instance.isAvailable();
@@ -21,9 +20,7 @@ class WritePage extends StatelessWidget {
       onDiscovered: (NfcTag tag) async {
         try {
           // Convert profile data to a string
-          final data = profileData.entries
-              .map((entry) => '${entry.key}: ${entry.value}')
-              .join('\n');
+          final data = uid;
 
           // Ensure the data size is within the limit
           if (data.length > 137) {

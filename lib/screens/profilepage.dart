@@ -42,14 +42,12 @@ class _ProfilePageState extends State<ProfilePage> {
       // Navigate to the WritePage and pass the profile data
       Navigator.push(
         context,
-          MaterialPageRoute(
-            builder: (context) => WritePage(
-              profileData: {
-                'UID' : widget.uid,
-              },
-            )
+        MaterialPageRoute(
+          builder: (context) => WritePage(
+            uid: widget.uid,
+          ),
 
-      ),
+    ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
