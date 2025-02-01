@@ -85,7 +85,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ReadPage()),
+                        MaterialPageRoute(builder: (context) => ReadPage(uid: widget.uid)),
                       );
                     },
                   ),
