@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'profilepage.dart';
+import 'detailshome.dart';
 import 'read_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ProfilePage(uid: widget.uid)),
+                        MaterialPageRoute(builder: (context) => Detailshome(uid: widget.uid)),
                       );
                     },
                   ),
@@ -85,7 +85,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ReadPage(uid: widget.uid)),
+                        MaterialPageRoute(builder: (context) => ReadPage()),
                       );
                     },
                   ),
