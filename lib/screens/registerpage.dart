@@ -12,6 +12,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _obscurePassword = true;
 
   Future<void> registerUser() async {
     try {
@@ -33,57 +34,143 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Create Account",
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Text("Register to get started", style: TextStyle(fontSize: 16)),
-              SizedBox(height: 30),
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+      backgroundColor: Colors.blue.shade900,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header with Wave Background & Illustration
+            Container(
+              height: 250,
+              decoration: BoxDecoration(
+                color: Colors.blue.shade700,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(50),
+                  bottomRight: Radius.circular(50),
                 ),
               ),
-              SizedBox(height: 20),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 50),
+                    Image.asset(
+                      'assets/illustration.png', // Replace with your asset image
+                      height: 100,
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Create Account",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Register to get started",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: registerUser,
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15, horizontal: 80),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                ),
-                child: Text("Register", style: TextStyle(fontSize: 18)),
+            ),
+
+            // Registration Form
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+              child: Column(
+                children: [
+                  // Email Input
+                  TextField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      labelText: "Email",
+                      prefixIcon: Icon(Icons.email, color: Colors.blue),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+
+                  // Password Input
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      labelText: "Password",
+                      prefixIcon: Icon(Icons.lock, color: Colors.blue),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.blue,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 30),
+
+                  // Register Button
+                  ElevatedButton(
+                    onPressed: registerUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade400,
+                      padding: EdgeInsets.symmetric(vertical: 15, horizontal: 100),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: Text(
+                      "REGISTER",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+
+                  // Login Link
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: RichText(
+                      text: TextSpan(
+                        text: "Already have an account? ",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        children: [
+                          TextSpan(
+                            text: "Login",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 20),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Text(
-                  "Already have an account? Login",
-                  style: TextStyle(color: Colors.blue, fontSize: 16),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

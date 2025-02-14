@@ -23,8 +23,10 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _fetchUserName() async {
     try {
-      DocumentSnapshot userDoc =
-      await FirebaseFirestore.instance.collection('user_profiles').doc(widget.uid).get();
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('user_profiles')
+          .doc(widget.uid)
+          .get();
       setState(() {
         userName = userDoc["Full Name"] ?? "User";
       });
@@ -38,54 +40,77 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.blueGrey[700],
-        title: const Text('Data Tap', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.blue.shade900,
+      body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Hello, $userName!',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueGrey[900],
+            // Curved Wave Header
+            Container(
+              height: 250,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade700, Colors.blue.shade900],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(50),
+                  bottomRight: Radius.circular(50),
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 50),
+                    Text(
+                      "Hello, $userName!",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Welcome to Data Tap",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'Welcome to Data Tap! Manage your NFC data effortlessly.',
-              style: TextStyle(fontSize: 16, color: Colors.black87),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+
+            // Dashboard Cards
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
                 children: [
                   _buildDashboardCard(
                     icon: Icons.person,
                     label: 'Profile',
+                    color: Colors.orange.shade400,
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => Detailshome(uid: widget.uid)),
+                        MaterialPageRoute(
+                            builder: (context) => Detailshome(uid: widget.uid)),
                       );
                     },
                   ),
+                  SizedBox(height: 20),
                   _buildDashboardCard(
                     icon: Icons.nfc,
                     label: 'Read Data',
+                    color: Colors.purple.shade400,
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ReadPage(uid: widget.uid)),
+                        MaterialPageRoute(
+                            builder: (context) => ReadPage(uid: widget.uid)),
                       );
                     },
                   ),
@@ -98,21 +123,40 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDashboardCard({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _buildDashboardCard({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 3,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(icon, size: 50, color: Colors.blueGrey[700]),
-            const SizedBox(height: 10),
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: color.withOpacity(0.2),
+              child: Icon(icon, size: 30, color: color),
+            ),
             Text(
               label,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.blueGrey[900]),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
+            Icon(Icons.arrow_forward_ios, color: Colors.grey),
           ],
         ),
       ),

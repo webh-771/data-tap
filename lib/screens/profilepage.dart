@@ -50,25 +50,26 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blue.shade900,
       appBar: AppBar(
         title: Text('Profile Page'),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
-        elevation: 4,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            // Glassmorphic Card UI
+            Card(
+              color: Colors.white.withOpacity(0.1),
+              elevation: 10,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     children: [
                       _buildTextField(_nameController, 'Full Name', Icons.person),
@@ -78,28 +79,33 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildDateField(),
                       _buildGenderDropdown(),
                       SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            _saveProfileDetails();
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+
+                      // Modern Save Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              _saveProfileDetails();
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: Colors.blueAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                           ),
-                          textStyle: TextStyle(fontSize: 18),
+                          child: Text(
+                            'Save Profile',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
                         ),
-                        child: Text('Save Profile'),
                       ),
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -112,14 +118,21 @@ class _ProfilePageState extends State<ProfilePage> {
       child: TextFormField(
         controller: controller,
         keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
+        style: TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          prefixIcon: Icon(icon, color: Colors.blueAccent),
+          prefixIcon: Icon(icon, color: Colors.white70),
           labelText: label,
-          border: OutlineInputBorder(
+          labelStyle: TextStyle(color: Colors.white70),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white54),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.blueAccent),
             borderRadius: BorderRadius.circular(10),
           ),
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: Colors.white.withOpacity(0.1),
         ),
         validator: (value) {
           if (label == 'Email' && value != null && !RegExp(r"^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$").hasMatch(value)) {
@@ -144,14 +157,21 @@ class _ProfilePageState extends State<ProfilePage> {
       child: TextFormField(
         controller: _dobController,
         readOnly: true,
+        style: TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          prefixIcon: Icon(Icons.calendar_today, color: Colors.blueAccent),
+          prefixIcon: Icon(Icons.calendar_today, color: Colors.white70),
           labelText: 'Date of Birth',
-          border: OutlineInputBorder(
+          labelStyle: TextStyle(color: Colors.white70),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white54),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.blueAccent),
             borderRadius: BorderRadius.circular(10),
           ),
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: Colors.white.withOpacity(0.1),
         ),
         validator: (value) => value == null || value.isEmpty ? 'Please select Date of Birth' : null,
         onTap: () async {
@@ -160,6 +180,17 @@ class _ProfilePageState extends State<ProfilePage> {
             initialDate: DateTime(2000),
             firstDate: DateTime(1900),
             lastDate: DateTime.now(),
+            builder: (context, child) {
+              return Theme(
+                data: ThemeData.dark().copyWith(
+                  primaryColor: Colors.blueAccent,
+                  hintColor: Colors.blueAccent,
+                  colorScheme: ColorScheme.dark(primary: Colors.blueAccent),
+                  dialogBackgroundColor: Colors.blueGrey.shade900,
+                ),
+                child: child!,
+              );
+            },
           );
           if (pickedDate != null) {
             setState(() {
@@ -177,14 +208,18 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: DropdownButtonFormField<String>(
         value: _selectedGender,
+        dropdownColor: Colors.blueGrey.shade900,
+        style: TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          prefixIcon: Icon(Icons.wc, color: Colors.blueAccent),
+          prefixIcon: Icon(Icons.wc, color: Colors.white70),
           labelText: 'Gender',
-          border: OutlineInputBorder(
+          labelStyle: TextStyle(color: Colors.white70),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white54),
             borderRadius: BorderRadius.circular(10),
           ),
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: Colors.white.withOpacity(0.1),
         ),
         items: ['Male', 'Female', 'Other'].map((String gender) {
           return DropdownMenuItem<String>(
