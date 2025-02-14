@@ -101,7 +101,7 @@ class Detailshome extends StatelessWidget {
                 backgroundColor: color.withOpacity(0.2),
                 child: Icon(icon, size: 30, color: color),
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 20),
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -109,7 +109,7 @@ class Detailshome extends StatelessWidget {
               ),
             ],
           ),
-        ),
+        )
       ),
     );
   }
