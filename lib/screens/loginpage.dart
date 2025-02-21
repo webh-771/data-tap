@@ -61,10 +61,6 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SizedBox(height: 50),
-                    Image.asset(
-                      'lib/assets/illustration.png', // Add your image in assets
-                      height: 100,
-                    ),
                     SizedBox(height: 10),
                     Text(
                       "Welcome Back",

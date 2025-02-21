@@ -53,10 +53,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SizedBox(height: 50),
-                    Image.asset(
-                      'assets/illustration.png', // Replace with your asset image
-                      height: 100,
-                    ),
                     SizedBox(height: 10),
                     Text(
                       "Create Account",

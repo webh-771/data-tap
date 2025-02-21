@@ -103,21 +103,26 @@ class Detailshome extends StatelessWidget {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            // Ensures content does not exceed available space
             children: [
               CircleAvatar(
                 radius: 30,
                 backgroundColor: color.withOpacity(0.2),
                 child: Icon(icon, size: 30, color: color),
               ),
-              SizedBox(height: 20),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              SizedBox(height: 10), // Reduce spacing to prevent overflow
+              Flexible( // Prevents overflow
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14,
+                      fontWeight: FontWeight.w600), // Reduce font size
+                ),
               ),
             ],
           ),
-        )
+        ),
       ),
     );
   }
