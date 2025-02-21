@@ -12,6 +12,7 @@ class ReadPage extends StatefulWidget {
 class _ReadPageState extends State<ReadPage> {
   Map<String, dynamic> profileData = {};
   Map<String, dynamic> medicalRecords = {};
+  Map<String, dynamic> userIdentificationData = {};
   String? errorMessage;
   String? selectedRecordKey;
   String? selectedMode;
@@ -106,6 +107,18 @@ class _ReadPageState extends State<ReadPage> {
             selectedRecordKey = null;
           });
         }
+      } else if (selectedMode == 'User Identification') {
+        final doc = await FirebaseFirestore.instance.collection('user_identification').doc(uid).get();
+        if (doc.exists) {
+          setState(() {
+            userIdentificationData = doc.data()!;
+          });
+        } else {
+          setState(() {
+            errorMessage = "No user identification found.";
+            userIdentificationData = {};
+          });
+        }
       }
     } catch (e) {
       setState(() {
@@ -154,6 +167,7 @@ class _ReadPageState extends State<ReadPage> {
               ),
             if (selectedMode == 'User Profile' && profileData.isNotEmpty) _buildProfileCard(),
             if (selectedMode == 'Medical Records' && medicalRecords.isNotEmpty) _buildMedicalRecordCard(),
+            if (selectedMode == 'User Identification' && userIdentificationData.isNotEmpty) _buildUserIdentificationCard(),
           ],
         ),
       ),
@@ -176,7 +190,7 @@ class _ReadPageState extends State<ReadPage> {
               selectedMode = newValue;
             });
           },
-          items: ['User Profile', 'Medical Records'].map((String mode) {
+          items: ['User Profile', 'Medical Records', 'User Identification'].map((String mode) {
             return DropdownMenuItem<String>(
               value: mode,
               child: Text(mode, style: const TextStyle(fontSize: 18)),
@@ -203,6 +217,10 @@ class _ReadPageState extends State<ReadPage> {
           _buildDataCard(medicalRecords[selectedRecordKey], Colors.green.shade50),
       ],
     );
+  }
+
+  Widget _buildUserIdentificationCard() {
+    return _buildDataCard(userIdentificationData, Colors.purple.shade50);
   }
 
   Widget _buildMedicalRecordsDropdown() {
