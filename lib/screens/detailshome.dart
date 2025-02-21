@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:learning/screens/profilepage.dart';
 import 'package:learning/screens/medicaldetails.dart';
+import 'package:learning/screens/identificationpage.dart'; // Import the new page
 
 class Detailshome extends StatelessWidget {
   final String uid; // User's unique ID
@@ -64,6 +65,13 @@ class Detailshome extends StatelessWidget {
                   title: "Medical Records",
                   color: Colors.purple,
                   page: MedicalRecordsPage(uid: uid),
+                ),
+                _buildGridCard(
+                  context,
+                  icon: Icons.badge, // ID card icon
+                  title: "Identification",
+                  color: Colors.teal,
+                  page: IdentificationPage(uid: uid), // New Page for IDs
                 ),
               ],
             ),
