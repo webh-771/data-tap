@@ -2,49 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-class IdentificationPage extends StatefulWidget {
+class EmploymentPage extends StatefulWidget {
   final String uid;
 
-  const IdentificationPage({Key? key, required this.uid}) : super(key: key);
+  const EmploymentPage({Key? key, required this.uid}) : super(key: key);
 
   @override
-  _IdentificationPageState createState() => _IdentificationPageState();
+  _EmploymentPageState createState() => _EmploymentPageState();
 }
 
-class _IdentificationPageState extends State<IdentificationPage> {
+class _EmploymentPageState extends State<EmploymentPage> {
   final _formKey = GlobalKey<FormState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Form controllers
-  final TextEditingController _cardNameController = TextEditingController();
-  final TextEditingController _cardNumberController = TextEditingController();
-  final TextEditingController _issueDateController = TextEditingController();
-  final TextEditingController _expiryDateController = TextEditingController();
-  final TextEditingController _issuingAuthorityController = TextEditingController();
-  final TextEditingController _additionalInfoController = TextEditingController();
+  final TextEditingController _companyController = TextEditingController();
+  final TextEditingController _jobTitleController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
+  final TextEditingController _jobDescriptionController = TextEditingController();
+  final TextEditingController _achievementsController = TextEditingController();
 
-  bool _hasNoExpiry = false;
-  List<Map<String, dynamic>> _identificationEntries = [];
+  bool _isCurrentlyWorking = false;
+  List<Map<String, dynamic>> _employmentEntries = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadIdentificationData();
+    _loadEmploymentData();
   }
 
   @override
   void dispose() {
-    _cardNameController.dispose();
-    _cardNumberController.dispose();
-    _issueDateController.dispose();
-    _expiryDateController.dispose();
-    _issuingAuthorityController.dispose();
-    _additionalInfoController.dispose();
+    _companyController.dispose();
+    _jobTitleController.dispose();
+    _locationController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
+    _jobDescriptionController.dispose();
+    _achievementsController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadIdentificationData() async {
+  Future<void> _loadEmploymentData() async {
     setState(() {
       _isLoading = true;
     });
@@ -53,7 +55,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
       final docSnapshot = await _firestore
           .collection('users')
           .doc(widget.uid)
-          .collection('identification')
+          .collection('employment')
           .get();
 
       final List<Map<String, dynamic>> entries = [];
@@ -66,14 +68,14 @@ class _IdentificationPageState extends State<IdentificationPage> {
       }
 
       setState(() {
-        _identificationEntries = entries;
+        _employmentEntries = entries;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      _showErrorSnackBar('Error loading identification data');
+      _showErrorSnackBar('Error loading employment data');
     }
   }
 
@@ -87,7 +89,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
 
     if (picked != null) {
       setState(() {
-        controller.text = DateFormat('dd/MM/yyyy').format(picked);
+        controller.text = DateFormat('MM/yyyy').format(picked);
       });
     }
   }
@@ -101,53 +103,55 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  Future<void> _saveIdentification() async {
+  Future<void> _saveEmployment() async {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      final identification = {
-        'cardName': _cardNameController.text,
-        'cardNumber': _cardNumberController.text,
-        'issueDate': _issueDateController.text,
-        'expiryDate': _hasNoExpiry ? 'No Expiry' : _expiryDateController.text,
-        'hasNoExpiry': _hasNoExpiry,
-        'issuingAuthority': _issuingAuthorityController.text,
-        'additionalInfo': _additionalInfoController.text,
+      final employment = {
+        'company': _companyController.text,
+        'jobTitle': _jobTitleController.text,
+        'location': _locationController.text,
+        'startDate': _startDateController.text,
+        'endDate': _isCurrentlyWorking ? 'Present' : _endDateController.text,
+        'isCurrentlyWorking': _isCurrentlyWorking,
+        'jobDescription': _jobDescriptionController.text,
+        'achievements': _achievementsController.text,
         'timestamp': FieldValue.serverTimestamp(),
       };
 
       await _firestore
           .collection('users')
           .doc(widget.uid)
-          .collection('identification')
-          .add(identification);
+          .collection('employment')
+          .add(employment);
 
       _resetForm();
-      _loadIdentificationData();
+      _loadEmploymentData();
 
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Identification card saved successfully'),
+          content: Text('Employment entry saved successfully'),
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
-      _showErrorSnackBar('Error saving identification data');
+      _showErrorSnackBar('Error saving employment data');
     }
   }
 
   void _resetForm() {
-    _cardNameController.clear();
-    _cardNumberController.clear();
-    _issueDateController.clear();
-    _expiryDateController.clear();
-    _issuingAuthorityController.clear();
-    _additionalInfoController.clear();
-    _hasNoExpiry = false;
+    _companyController.clear();
+    _jobTitleController.clear();
+    _locationController.clear();
+    _startDateController.clear();
+    _endDateController.clear();
+    _jobDescriptionController.clear();
+    _achievementsController.clear();
+    _isCurrentlyWorking = false;
   }
 
-  void _showAddIdentificationDialog() {
+  void _showAddEmploymentDialog() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -184,7 +188,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 ),
                 SizedBox(height: 20),
                 Text(
-                  'Add Identification Card',
+                  'Add Employment',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -192,48 +196,47 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 ),
                 SizedBox(height: 20),
                 TextFormField(
-                  controller: _cardNameController,
+                  controller: _companyController,
                   decoration: InputDecoration(
-                    labelText: 'Card Type',
-                    hintText: 'Aadhar Card, PAN Card, etc.',
+                    labelText: 'Company',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.badge),
+                    prefixIcon: Icon(Icons.business),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter card type';
+                      return 'Please enter company name';
                     }
                     return null;
                   },
                 ),
                 SizedBox(height: 15),
                 TextFormField(
-                  controller: _cardNumberController,
+                  controller: _jobTitleController,
                   decoration: InputDecoration(
-                    labelText: 'Card Number',
+                    labelText: 'Job Title',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.numbers),
+                    prefixIcon: Icon(Icons.work),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter card number';
+                      return 'Please enter your job title';
                     }
                     return null;
                   },
                 ),
                 SizedBox(height: 15),
                 TextFormField(
-                  controller: _issuingAuthorityController,
+                  controller: _locationController,
                   decoration: InputDecoration(
-                    labelText: 'Issuing Authority',
+                    labelText: 'Location',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.account_balance),
+                    prefixIcon: Icon(Icons.location_on),
                   ),
                 ),
                 SizedBox(height: 15),
@@ -241,35 +244,41 @@ class _IdentificationPageState extends State<IdentificationPage> {
                   children: [
                     Expanded(
                       child: TextFormField(
-                        controller: _issueDateController,
+                        controller: _startDateController,
                         decoration: InputDecoration(
-                          labelText: 'Issue Date',
+                          labelText: 'Start Date',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                           prefixIcon: Icon(Icons.calendar_today),
                         ),
                         readOnly: true,
-                        onTap: () => _selectDate(context, _issueDateController),
+                        onTap: () => _selectDate(context, _startDateController),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please select a start date';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                     SizedBox(width: 10),
                     Expanded(
                       child: TextFormField(
-                        controller: _expiryDateController,
+                        controller: _endDateController,
                         decoration: InputDecoration(
-                          labelText: 'Expiry Date',
+                          labelText: 'End Date',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                           prefixIcon: Icon(Icons.calendar_today),
                         ),
                         readOnly: true,
-                        enabled: !_hasNoExpiry,
-                        onTap: () => _selectDate(context, _expiryDateController),
+                        enabled: !_isCurrentlyWorking,
+                        onTap: () => _selectDate(context, _endDateController),
                         validator: (value) {
-                          if (!_hasNoExpiry && (value == null || value.isEmpty)) {
-                            return 'Please select expiry date';
+                          if (!_isCurrentlyWorking && (value == null || value.isEmpty)) {
+                            return 'Please select an end date';
                           }
                           return null;
                         },
@@ -280,43 +289,55 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 Row(
                   children: [
                     Checkbox(
-                      value: _hasNoExpiry,
+                      value: _isCurrentlyWorking,
                       onChanged: (value) {
                         setState(() {
-                          _hasNoExpiry = value ?? false;
-                          if (_hasNoExpiry) {
-                            _expiryDateController.clear();
+                          _isCurrentlyWorking = value ?? false;
+                          if (_isCurrentlyWorking) {
+                            _endDateController.clear();
                           }
                         });
                       },
                     ),
-                    Text('No Expiry Date'),
+                    Text('Currently Working Here'),
                   ],
                 ),
                 SizedBox(height: 15),
                 TextFormField(
-                  controller: _additionalInfoController,
+                  controller: _jobDescriptionController,
                   decoration: InputDecoration(
-                    labelText: 'Additional Information',
+                    labelText: 'Job Description',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.info_outline),
+                    prefixIcon: Icon(Icons.description),
+                  ),
+                  maxLines: 3,
+                ),
+                SizedBox(height: 15),
+                TextFormField(
+                  controller: _achievementsController,
+                  decoration: InputDecoration(
+                    labelText: 'Key Achievements',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    prefixIcon: Icon(Icons.emoji_events),
                   ),
                   maxLines: 3,
                 ),
                 SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: _saveIdentification,
+                  onPressed: _saveEmployment,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Colors.indigo,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text('Save Identification Card'),
+                  child: Text('Save Employment'),
                 ),
                 SizedBox(height: 20),
               ],
@@ -327,25 +348,27 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  void _showIdentificationDetails(Map<String, dynamic> identification) {
+  void _showEmploymentDetails(Map<String, dynamic> employment) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${identification['cardName']}'),
+        title: Text('${employment['jobTitle']}'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _detailRow(Icons.numbers, 'Card Number', identification['cardNumber']),
-              _detailRow(Icons.account_balance, 'Issuing Authority',
-                  identification['issuingAuthority'] ?? 'Not specified'),
-              _detailRow(Icons.calendar_today, 'Issue Date',
-                  identification['issueDate'] ?? 'Not specified'),
-              _detailRow(Icons.event_busy, 'Expiry Date',
-                  identification['hasNoExpiry'] ? 'No Expiry' : identification['expiryDate']),
-              if (identification['additionalInfo'] != null && identification['additionalInfo'].isNotEmpty)
-                _detailRow(Icons.info_outline, 'Additional Info', identification['additionalInfo']),
+              _detailRow(Icons.business, 'Company', employment['company']),
+              _detailRow(Icons.location_on, 'Location', employment['location'] ?? 'Not specified'),
+              _detailRow(
+                  Icons.date_range,
+                  'Duration',
+                  '${employment['startDate']} - ${employment['isCurrentlyWorking'] ? 'Present' : employment['endDate']}'
+              ),
+              if (employment['jobDescription'] != null && employment['jobDescription'].isNotEmpty)
+                _detailRow(Icons.description, 'Job Description', employment['jobDescription']),
+              if (employment['achievements'] != null && employment['achievements'].isNotEmpty)
+                _detailRow(Icons.emoji_events, 'Key Achievements', employment['achievements']),
             ],
           ),
         ),
@@ -357,7 +380,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteIdentificationEntry(identification['id']);
+              _deleteEmploymentEntry(employment['id']);
             },
             child: Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -372,7 +395,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: Colors.teal.shade700),
+          Icon(icon, size: 20, color: Colors.indigo.shade700),
           SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -399,67 +422,93 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  Future<void> _deleteIdentificationEntry(String id) async {
+  Future<void> _deleteEmploymentEntry(String id) async {
     try {
       await _firestore
           .collection('users')
           .doc(widget.uid)
-          .collection('identification')
+          .collection('employment')
           .doc(id)
           .delete();
 
-      _loadIdentificationData();
+      _loadEmploymentData();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Identification card deleted'),
+          content: Text('Employment entry deleted'),
           backgroundColor: Colors.red,
         ),
       );
     } catch (e) {
-      _showErrorSnackBar('Error deleting identification card');
+      _showErrorSnackBar('Error deleting employment entry');
     }
   }
 
-  String _getCardTypeIcon(String cardName) {
-    final cardNameLower = cardName.toLowerCase();
-    if (cardNameLower.contains('aadhar')) return '🆔';
-    if (cardNameLower.contains('pan')) return '💳';
-    if (cardNameLower.contains('passport')) return '🛂';
-    if (cardNameLower.contains('license') || cardNameLower.contains('driving')) return '🚗';
-    if (cardNameLower.contains('voter')) return '🗳️';
-    return '📄';
+  String _calculateTotalExperience() {
+    if (_employmentEntries.isEmpty) return "0";
+
+    int totalMonths = 0;
+    final now = DateTime.now();
+
+    for (var entry in _employmentEntries) {
+      // Parse start date
+      final startDateParts = entry['startDate'].split('/');
+      final startMonth = int.parse(startDateParts[0]);
+      final startYear = int.parse(startDateParts[1]);
+
+      // Calculate end date
+      int endMonth, endYear;
+      if (entry['isCurrentlyWorking']) {
+        endMonth = now.month;
+        endYear = now.year;
+      } else {
+        final endDateParts = entry['endDate'].split('/');
+        endMonth = int.parse(endDateParts[0]);
+        endYear = int.parse(endDateParts[1]);
+      }
+
+      // Calculate months difference
+      totalMonths += (endYear - startYear) * 12 + (endMonth - startMonth);
+    }
+
+    // Convert to years (rounded)
+    final years = (totalMonths / 12).round();
+    return years.toString();
   }
 
-  String _getValidityStatus(Map<String, dynamic> card) {
-    if (card['hasNoExpiry']) return 'Valid';
+  String _calculateLatestTitle() {
+    if (_employmentEntries.isEmpty) return "None";
 
-    try {
-      final expiry = card['expiryDate'].toString();
-      if (expiry == 'No Expiry') return 'Valid';
+    // Sort by end date (present jobs first, then most recent)
+    _employmentEntries.sort((a, b) {
+      if (a['isCurrentlyWorking'] && !b['isCurrentlyWorking']) return -1;
+      if (!a['isCurrentlyWorking'] && b['isCurrentlyWorking']) return 1;
 
-      final parts = expiry.split('/');
-      if (parts.length < 3) return 'Unknown';
+      // Both current or both past, compare start dates (most recent first)
+      final aDateParts = a['startDate'].split('/');
+      final bDateParts = b['startDate'].split('/');
 
-      final expiryDate = DateTime(
-          int.parse(parts[2]),
-          int.parse(parts[1]),
-          int.parse(parts[0])
-      );
+      final aYear = int.parse(aDateParts[1]);
+      final bYear = int.parse(bDateParts[1]);
 
-      return DateTime.now().isAfter(expiryDate) ? 'Expired' : 'Valid';
-    } catch (e) {
-      return 'Unknown';
-    }
+      if (aYear != bYear) return bYear.compareTo(aYear);
+
+      final aMonth = int.parse(aDateParts[0]);
+      final bMonth = int.parse(bDateParts[0]);
+      return bMonth.compareTo(aMonth);
+    });
+
+    // Return the job title of the most recent job
+    return _employmentEntries.isNotEmpty ? _employmentEntries[0]['jobTitle'] : "None";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.indigo,
         elevation: 0,
-        title: Text('Identification Cards'),
+        title: Text('Employment'),
         actions: [
           IconButton(
             icon: Icon(Icons.help_outline),
@@ -467,9 +516,9 @@ class _IdentificationPageState extends State<IdentificationPage> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: Text('About Identification Cards'),
+                  title: Text('About Employment Data'),
                   content: Text(
-                      'Store your identification cards such as Aadhar Card, PAN Card, Passport, Driving License, etc. This helps you keep track of your important documents and their expiry dates.'
+                      'Add your work history including companies, job titles, and responsibilities. This information helps build a comprehensive profile of your professional experience.'
                   ),
                   actions: [
                     TextButton(
@@ -490,7 +539,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
             height: 150,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.teal,
+              color: Colors.indigo,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
@@ -502,7 +551,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                   right: 20,
                   bottom: 20,
                   child: Icon(
-                    Icons.badge,
+                    Icons.business_center,
                     size: 80,
                     color: Colors.white.withOpacity(0.3),
                   ),
@@ -513,7 +562,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Your Identification Cards',
+                        'Your Professional Journey',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -522,7 +571,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Keep track of your important documents',
+                        'Add your work experiences and achievements',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
                           fontSize: 16,
@@ -555,22 +604,24 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildStatColumn(
-                    Icons.badge_outlined,
-                    _identificationEntries.length.toString(),
-                    'Cards',
-                    Colors.teal,
+                    Icons.business_center_outlined,
+                    _employmentEntries.length.toString(),
+                    'Jobs',
+                    Colors.indigo,
                   ),
                   _buildStatColumn(
-                    Icons.warning_amber_outlined,
-                    _calculateExpiringCards(),
-                    'Expiring',
+                    Icons.calendar_today_outlined,
+                    _calculateTotalExperience(),
+                    'Years',
+                    Colors.blue,
+                  ),
+                  _buildStatColumn(
+                    Icons.workspace_premium_outlined,
+                    _calculateLatestTitle().length > 10
+                        ? _calculateLatestTitle().substring(0, 10) + '...'
+                        : _calculateLatestTitle(),
+                    'Latest',
                     Colors.orange,
-                  ),
-                  _buildStatColumn(
-                    Icons.verified_outlined,
-                    _calculateValidCards(),
-                    'Valid',
-                    Colors.green,
                   ),
                 ],
               ),
@@ -584,38 +635,38 @@ class _IdentificationPageState extends State<IdentificationPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Your Documents',
+                  'Employment History',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: _showAddIdentificationDialog,
-                  icon: Icon(Icons.add, color: Colors.teal),
-                  label: Text('Add New', style: TextStyle(color: Colors.teal)),
+                  onPressed: _showAddEmploymentDialog,
+                  icon: Icon(Icons.add, color: Colors.indigo),
+                  label: Text('Add New', style: TextStyle(color: Colors.indigo)),
                 ),
               ],
             ),
           ),
 
-          // List of identification entries
+          // List of employment entries
           Expanded(
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
-                : _identificationEntries.isEmpty
+                : _employmentEntries.isEmpty
                 ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.badge_outlined,
+                    Icons.work_outline,
                     size: 70,
                     color: Colors.grey.shade400,
                   ),
                   SizedBox(height: 20),
                   Text(
-                    'No identification cards added yet',
+                    'No employment records yet',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey.shade600,
@@ -623,11 +674,11 @@ class _IdentificationPageState extends State<IdentificationPage> {
                   ),
                   SizedBox(height: 10),
                   ElevatedButton.icon(
-                    onPressed: _showAddIdentificationDialog,
+                    onPressed: _showAddEmploymentDialog,
                     icon: Icon(Icons.add),
-                    label: Text('Add ID Card'),
+                    label: Text('Add Employment'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: Colors.indigo,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -635,20 +686,20 @@ class _IdentificationPageState extends State<IdentificationPage> {
               ),
             )
                 : ListView.builder(
-              itemCount: _identificationEntries.length,
+              itemCount: _employmentEntries.length,
               padding: EdgeInsets.all(16),
               itemBuilder: (context, index) {
-                final identification = _identificationEntries[index];
-                return _buildIdentificationCard(identification);
+                final employment = _employmentEntries[index];
+                return _buildEmploymentCard(employment);
               },
             ),
           ),
         ],
       ),
-      floatingActionButton: _identificationEntries.isNotEmpty
+      floatingActionButton: _employmentEntries.isNotEmpty
           ? FloatingActionButton(
-        onPressed: _showAddIdentificationDialog,
-        backgroundColor: Colors.teal,
+        onPressed: _showAddEmploymentDialog,
+        backgroundColor: Colors.indigo,
         child: Icon(Icons.add),
       )
           : null,
@@ -685,12 +736,9 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  Widget _buildIdentificationCard(Map<String, dynamic> identification) {
-    final validityStatus = _getValidityStatus(identification);
-    final isExpired = validityStatus == 'Expired';
-
+  Widget _buildEmploymentCard(Map<String, dynamic> employment) {
     return GestureDetector(
-      onTap: () => _showIdentificationDetails(identification),
+      onTap: () => _showEmploymentDetails(employment),
       child: Container(
         margin: EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -709,147 +757,46 @@ class _IdentificationPageState extends State<IdentificationPage> {
           leading: Container(
             padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.teal.withOpacity(0.1),
+              color: Colors.indigo.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(
-              _getCardTypeIcon(identification['cardName']),
-              style: TextStyle(fontSize: 24),
-            ),
+            child: Icon(Icons.work, color: Colors.indigo),
           ),
           title: Text(
-            identification['cardName'],
+            employment['jobTitle'],
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 4),
-              Text(
-                'Card No: ${_maskCardNumber(identification['cardNumber'])}',
-                style: TextStyle(fontFamily: 'monospace'),
-              ),
+              Text(employment['company']),
               SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.event,
-                    size: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    identification['hasNoExpiry']
-                        ? 'No Expiry'
-                        : 'Expires: ${identification['expiryDate']}',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              Text(
+                '${employment['startDate']} - ${employment['isCurrentlyWorking'] ? 'Present' : employment['endDate']}',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
             ],
           ),
-          trailing: Container(
+          trailing: employment['isCurrentlyWorking']
+              ? Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: isExpired
-                  ? Colors.red.withOpacity(0.1)
-                  : Colors.green.withOpacity(0.1),
+              color: Colors.green.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              validityStatus,
+              'Current',
               style: TextStyle(
-                color: isExpired ? Colors.red : Colors.green,
+                color: Colors.green,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
             ),
-          ),
+          )
+              : null,
         ),
       ),
     );
-  }
-
-  String _maskCardNumber(String cardNumber) {
-    if (cardNumber.length <= 4) return cardNumber;
-    final visible = cardNumber.substring(cardNumber.length - 4);
-    return 'XXXX-XXXX-${visible}';
-  }
-
-  String _calculateExpiringCards() {
-    // Count cards expiring in next 3 months
-    if (_identificationEntries.isEmpty) return "0";
-
-    int count = 0;
-    final now = DateTime.now();
-    final threeMonthsLater = DateTime(now.year, now.month + 3, now.day);
-
-    for (var card in _identificationEntries) {
-      if (card['hasNoExpiry']) continue;
-
-      try {
-        final expiry = card['expiryDate'].toString();
-        if (expiry == 'No Expiry') continue;
-
-        final parts = expiry.split('/');
-        if (parts.length < 3) continue;
-
-        final expiryDate = DateTime(
-            int.parse(parts[2]),
-            int.parse(parts[1]),
-            int.parse(parts[0])
-        );
-
-        if (expiryDate.isAfter(now) && expiryDate.isBefore(threeMonthsLater)) {
-          count++;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-
-    return count.toString();
-  }
-
-  String _calculateValidCards() {
-    if (_identificationEntries.isEmpty) return "0";
-
-    int count = 0;
-    final now = DateTime.now();
-
-    for (var card in _identificationEntries) {
-      if (card['hasNoExpiry']) {
-        count++;
-        continue;
-      }
-
-      try {
-        final expiry = card['expiryDate'].toString();
-        if (expiry == 'No Expiry') {
-          count++;
-          continue;
-        }
-
-        final parts = expiry.split('/');
-        if (parts.length < 3) continue;
-
-        final expiryDate = DateTime(
-            int.parse(parts[2]),
-            int.parse(parts[1]),
-            int.parse(parts[0])
-        );
-
-        if (expiryDate.isAfter(now)) {
-          count++;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-
-    return count.toString();
   }
 }

@@ -2,49 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-class IdentificationPage extends StatefulWidget {
+class EducationPage extends StatefulWidget {
   final String uid;
 
-  const IdentificationPage({Key? key, required this.uid}) : super(key: key);
+  const EducationPage({Key? key, required this.uid}) : super(key: key);
 
   @override
-  _IdentificationPageState createState() => _IdentificationPageState();
+  _EducationPageState createState() => _EducationPageState();
 }
 
-class _IdentificationPageState extends State<IdentificationPage> {
+class _EducationPageState extends State<EducationPage> {
   final _formKey = GlobalKey<FormState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Form controllers
-  final TextEditingController _cardNameController = TextEditingController();
-  final TextEditingController _cardNumberController = TextEditingController();
-  final TextEditingController _issueDateController = TextEditingController();
-  final TextEditingController _expiryDateController = TextEditingController();
-  final TextEditingController _issuingAuthorityController = TextEditingController();
-  final TextEditingController _additionalInfoController = TextEditingController();
+  final TextEditingController _institutionController = TextEditingController();
+  final TextEditingController _degreeController = TextEditingController();
+  final TextEditingController _fieldOfStudyController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
+  final TextEditingController _gradeController = TextEditingController();
+  final TextEditingController _achievementsController = TextEditingController();
 
-  bool _hasNoExpiry = false;
-  List<Map<String, dynamic>> _identificationEntries = [];
+  bool _isCurrentlyStudying = false;
+  List<Map<String, dynamic>> _educationEntries = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadIdentificationData();
+    _loadEducationData();
   }
 
   @override
   void dispose() {
-    _cardNameController.dispose();
-    _cardNumberController.dispose();
-    _issueDateController.dispose();
-    _expiryDateController.dispose();
-    _issuingAuthorityController.dispose();
-    _additionalInfoController.dispose();
+    _institutionController.dispose();
+    _degreeController.dispose();
+    _fieldOfStudyController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
+    _gradeController.dispose();
+    _achievementsController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadIdentificationData() async {
+  Future<void> _loadEducationData() async {
     setState(() {
       _isLoading = true;
     });
@@ -53,7 +55,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
       final docSnapshot = await _firestore
           .collection('users')
           .doc(widget.uid)
-          .collection('identification')
+          .collection('education')
           .get();
 
       final List<Map<String, dynamic>> entries = [];
@@ -66,14 +68,14 @@ class _IdentificationPageState extends State<IdentificationPage> {
       }
 
       setState(() {
-        _identificationEntries = entries;
+        _educationEntries = entries;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      _showErrorSnackBar('Error loading identification data');
+      _showErrorSnackBar('Error loading education data');
     }
   }
 
@@ -87,7 +89,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
 
     if (picked != null) {
       setState(() {
-        controller.text = DateFormat('dd/MM/yyyy').format(picked);
+        controller.text = DateFormat('MM/yyyy').format(picked);
       });
     }
   }
@@ -101,53 +103,55 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  Future<void> _saveIdentification() async {
+  Future<void> _saveEducation() async {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      final identification = {
-        'cardName': _cardNameController.text,
-        'cardNumber': _cardNumberController.text,
-        'issueDate': _issueDateController.text,
-        'expiryDate': _hasNoExpiry ? 'No Expiry' : _expiryDateController.text,
-        'hasNoExpiry': _hasNoExpiry,
-        'issuingAuthority': _issuingAuthorityController.text,
-        'additionalInfo': _additionalInfoController.text,
+      final education = {
+        'institution': _institutionController.text,
+        'degree': _degreeController.text,
+        'fieldOfStudy': _fieldOfStudyController.text,
+        'startDate': _startDateController.text,
+        'endDate': _isCurrentlyStudying ? 'Present' : _endDateController.text,
+        'isCurrentlyStudying': _isCurrentlyStudying,
+        'grade': _gradeController.text,
+        'achievements': _achievementsController.text,
         'timestamp': FieldValue.serverTimestamp(),
       };
 
       await _firestore
           .collection('users')
           .doc(widget.uid)
-          .collection('identification')
-          .add(identification);
+          .collection('education')
+          .add(education);
 
       _resetForm();
-      _loadIdentificationData();
+      _loadEducationData();
 
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Identification card saved successfully'),
+          content: Text('Education entry saved successfully'),
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
-      _showErrorSnackBar('Error saving identification data');
+      _showErrorSnackBar('Error saving education data');
     }
   }
 
   void _resetForm() {
-    _cardNameController.clear();
-    _cardNumberController.clear();
-    _issueDateController.clear();
-    _expiryDateController.clear();
-    _issuingAuthorityController.clear();
-    _additionalInfoController.clear();
-    _hasNoExpiry = false;
+    _institutionController.clear();
+    _degreeController.clear();
+    _fieldOfStudyController.clear();
+    _startDateController.clear();
+    _endDateController.clear();
+    _gradeController.clear();
+    _achievementsController.clear();
+    _isCurrentlyStudying = false;
   }
 
-  void _showAddIdentificationDialog() {
+  void _showAddEducationDialog() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -184,7 +188,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 ),
                 SizedBox(height: 20),
                 Text(
-                  'Add Identification Card',
+                  'Add Education',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -192,48 +196,47 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 ),
                 SizedBox(height: 20),
                 TextFormField(
-                  controller: _cardNameController,
+                  controller: _institutionController,
                   decoration: InputDecoration(
-                    labelText: 'Card Type',
-                    hintText: 'Aadhar Card, PAN Card, etc.',
+                    labelText: 'Institution',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.badge),
+                    prefixIcon: Icon(Icons.school),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter card type';
+                      return 'Please enter institution name';
                     }
                     return null;
                   },
                 ),
                 SizedBox(height: 15),
                 TextFormField(
-                  controller: _cardNumberController,
+                  controller: _degreeController,
                   decoration: InputDecoration(
-                    labelText: 'Card Number',
+                    labelText: 'Degree/Certificate',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.numbers),
+                    prefixIcon: Icon(Icons.card_membership),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter card number';
+                      return 'Please enter your degree or certificate';
                     }
                     return null;
                   },
                 ),
                 SizedBox(height: 15),
                 TextFormField(
-                  controller: _issuingAuthorityController,
+                  controller: _fieldOfStudyController,
                   decoration: InputDecoration(
-                    labelText: 'Issuing Authority',
+                    labelText: 'Field of Study',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.account_balance),
+                    prefixIcon: Icon(Icons.subject),
                   ),
                 ),
                 SizedBox(height: 15),
@@ -241,35 +244,41 @@ class _IdentificationPageState extends State<IdentificationPage> {
                   children: [
                     Expanded(
                       child: TextFormField(
-                        controller: _issueDateController,
+                        controller: _startDateController,
                         decoration: InputDecoration(
-                          labelText: 'Issue Date',
+                          labelText: 'Start Date',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                           prefixIcon: Icon(Icons.calendar_today),
                         ),
                         readOnly: true,
-                        onTap: () => _selectDate(context, _issueDateController),
+                        onTap: () => _selectDate(context, _startDateController),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please select a start date';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                     SizedBox(width: 10),
                     Expanded(
                       child: TextFormField(
-                        controller: _expiryDateController,
+                        controller: _endDateController,
                         decoration: InputDecoration(
-                          labelText: 'Expiry Date',
+                          labelText: 'End Date',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                           prefixIcon: Icon(Icons.calendar_today),
                         ),
                         readOnly: true,
-                        enabled: !_hasNoExpiry,
-                        onTap: () => _selectDate(context, _expiryDateController),
+                        enabled: !_isCurrentlyStudying,
+                        onTap: () => _selectDate(context, _endDateController),
                         validator: (value) {
-                          if (!_hasNoExpiry && (value == null || value.isEmpty)) {
-                            return 'Please select expiry date';
+                          if (!_isCurrentlyStudying && (value == null || value.isEmpty)) {
+                            return 'Please select an end date';
                           }
                           return null;
                         },
@@ -280,43 +289,54 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 Row(
                   children: [
                     Checkbox(
-                      value: _hasNoExpiry,
+                      value: _isCurrentlyStudying,
                       onChanged: (value) {
                         setState(() {
-                          _hasNoExpiry = value ?? false;
-                          if (_hasNoExpiry) {
-                            _expiryDateController.clear();
+                          _isCurrentlyStudying = value ?? false;
+                          if (_isCurrentlyStudying) {
+                            _endDateController.clear();
                           }
                         });
                       },
                     ),
-                    Text('No Expiry Date'),
+                    Text('Currently Studying'),
                   ],
                 ),
                 SizedBox(height: 15),
                 TextFormField(
-                  controller: _additionalInfoController,
+                  controller: _gradeController,
                   decoration: InputDecoration(
-                    labelText: 'Additional Information',
+                    labelText: 'Grade/GPA',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.info_outline),
+                    prefixIcon: Icon(Icons.grade),
+                  ),
+                ),
+                SizedBox(height: 15),
+                TextFormField(
+                  controller: _achievementsController,
+                  decoration: InputDecoration(
+                    labelText: 'Achievements/Activities',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    prefixIcon: Icon(Icons.emoji_events),
                   ),
                   maxLines: 3,
                 ),
                 SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: _saveIdentification,
+                  onPressed: _saveEducation,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Colors.purple,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text('Save Identification Card'),
+                  child: Text('Save Education'),
                 ),
                 SizedBox(height: 20),
               ],
@@ -327,25 +347,26 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  void _showIdentificationDetails(Map<String, dynamic> identification) {
+  void _showEducationDetails(Map<String, dynamic> education) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${identification['cardName']}'),
+        title: Text('${education['degree']}'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _detailRow(Icons.numbers, 'Card Number', identification['cardNumber']),
-              _detailRow(Icons.account_balance, 'Issuing Authority',
-                  identification['issuingAuthority'] ?? 'Not specified'),
-              _detailRow(Icons.calendar_today, 'Issue Date',
-                  identification['issueDate'] ?? 'Not specified'),
-              _detailRow(Icons.event_busy, 'Expiry Date',
-                  identification['hasNoExpiry'] ? 'No Expiry' : identification['expiryDate']),
-              if (identification['additionalInfo'] != null && identification['additionalInfo'].isNotEmpty)
-                _detailRow(Icons.info_outline, 'Additional Info', identification['additionalInfo']),
+              _detailRow(Icons.school, 'Institution', education['institution']),
+              _detailRow(Icons.subject, 'Field of Study', education['fieldOfStudy'] ?? 'Not specified'),
+              _detailRow(
+                  Icons.date_range,
+                  'Duration',
+                  '${education['startDate']} - ${education['isCurrentlyStudying'] ? 'Present' : education['endDate']}'
+              ),
+              _detailRow(Icons.grade, 'Grade/GPA', education['grade'] ?? 'Not specified'),
+              if (education['achievements'] != null && education['achievements'].isNotEmpty)
+                _detailRow(Icons.emoji_events, 'Achievements', education['achievements']),
             ],
           ),
         ),
@@ -357,7 +378,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteIdentificationEntry(identification['id']);
+              _deleteEducationEntry(education['id']);
             },
             child: Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -372,7 +393,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: Colors.teal.shade700),
+          Icon(icon, size: 20, color: Colors.purple.shade700),
           SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -399,57 +420,25 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  Future<void> _deleteIdentificationEntry(String id) async {
+  Future<void> _deleteEducationEntry(String id) async {
     try {
       await _firestore
           .collection('users')
           .doc(widget.uid)
-          .collection('identification')
+          .collection('education')
           .doc(id)
           .delete();
 
-      _loadIdentificationData();
+      _loadEducationData();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Identification card deleted'),
+          content: Text('Education entry deleted'),
           backgroundColor: Colors.red,
         ),
       );
     } catch (e) {
-      _showErrorSnackBar('Error deleting identification card');
-    }
-  }
-
-  String _getCardTypeIcon(String cardName) {
-    final cardNameLower = cardName.toLowerCase();
-    if (cardNameLower.contains('aadhar')) return '🆔';
-    if (cardNameLower.contains('pan')) return '💳';
-    if (cardNameLower.contains('passport')) return '🛂';
-    if (cardNameLower.contains('license') || cardNameLower.contains('driving')) return '🚗';
-    if (cardNameLower.contains('voter')) return '🗳️';
-    return '📄';
-  }
-
-  String _getValidityStatus(Map<String, dynamic> card) {
-    if (card['hasNoExpiry']) return 'Valid';
-
-    try {
-      final expiry = card['expiryDate'].toString();
-      if (expiry == 'No Expiry') return 'Valid';
-
-      final parts = expiry.split('/');
-      if (parts.length < 3) return 'Unknown';
-
-      final expiryDate = DateTime(
-          int.parse(parts[2]),
-          int.parse(parts[1]),
-          int.parse(parts[0])
-      );
-
-      return DateTime.now().isAfter(expiryDate) ? 'Expired' : 'Valid';
-    } catch (e) {
-      return 'Unknown';
+      _showErrorSnackBar('Error deleting education entry');
     }
   }
 
@@ -457,9 +446,9 @@ class _IdentificationPageState extends State<IdentificationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.purple,
         elevation: 0,
-        title: Text('Identification Cards'),
+        title: Text('Education'),
         actions: [
           IconButton(
             icon: Icon(Icons.help_outline),
@@ -467,9 +456,9 @@ class _IdentificationPageState extends State<IdentificationPage> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: Text('About Identification Cards'),
+                  title: Text('About Education Data'),
                   content: Text(
-                      'Store your identification cards such as Aadhar Card, PAN Card, Passport, Driving License, etc. This helps you keep track of your important documents and their expiry dates.'
+                      'Add your educational history including schools, colleges, universities, and other educational institutions you have attended. You can also add certifications, courses, and other qualifications.'
                   ),
                   actions: [
                     TextButton(
@@ -490,7 +479,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
             height: 150,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.teal,
+              color: Colors.purple,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
@@ -502,7 +491,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                   right: 20,
                   bottom: 20,
                   child: Icon(
-                    Icons.badge,
+                    Icons.school,
                     size: 80,
                     color: Colors.white.withOpacity(0.3),
                   ),
@@ -513,7 +502,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Your Identification Cards',
+                        'Your Educational Journey',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -522,7 +511,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Keep track of your important documents',
+                        'Add your degrees, certifications, and courses',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
                           fontSize: 16,
@@ -555,22 +544,22 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildStatColumn(
-                    Icons.badge_outlined,
-                    _identificationEntries.length.toString(),
-                    'Cards',
-                    Colors.teal,
+                    Icons.school_outlined,
+                    _educationEntries.length.toString(),
+                    'Entries',
+                    Colors.purple,
                   ),
                   _buildStatColumn(
-                    Icons.warning_amber_outlined,
-                    _calculateExpiringCards(),
-                    'Expiring',
+                    Icons.calendar_today_outlined,
+                    _calculateYearsOfEducation(),
+                    'Years',
+                    Colors.blue,
+                  ),
+                  _buildStatColumn(
+                    Icons.star_outline,
+                    _calculateHighestDegree(),
+                    'Highest',
                     Colors.orange,
-                  ),
-                  _buildStatColumn(
-                    Icons.verified_outlined,
-                    _calculateValidCards(),
-                    'Valid',
-                    Colors.green,
                   ),
                 ],
               ),
@@ -584,38 +573,38 @@ class _IdentificationPageState extends State<IdentificationPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Your Documents',
+                  'Education History',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: _showAddIdentificationDialog,
-                  icon: Icon(Icons.add, color: Colors.teal),
-                  label: Text('Add New', style: TextStyle(color: Colors.teal)),
+                  onPressed: _showAddEducationDialog,
+                  icon: Icon(Icons.add, color: Colors.purple),
+                  label: Text('Add New', style: TextStyle(color: Colors.purple)),
                 ),
               ],
             ),
           ),
 
-          // List of identification entries
+          // List of education entries
           Expanded(
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
-                : _identificationEntries.isEmpty
+                : _educationEntries.isEmpty
                 ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.badge_outlined,
+                    Icons.school_outlined,
                     size: 70,
                     color: Colors.grey.shade400,
                   ),
                   SizedBox(height: 20),
                   Text(
-                    'No identification cards added yet',
+                    'No education records yet',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey.shade600,
@@ -623,11 +612,11 @@ class _IdentificationPageState extends State<IdentificationPage> {
                   ),
                   SizedBox(height: 10),
                   ElevatedButton.icon(
-                    onPressed: _showAddIdentificationDialog,
+                    onPressed: _showAddEducationDialog,
                     icon: Icon(Icons.add),
-                    label: Text('Add ID Card'),
+                    label: Text('Add Education'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: Colors.purple,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -635,20 +624,20 @@ class _IdentificationPageState extends State<IdentificationPage> {
               ),
             )
                 : ListView.builder(
-              itemCount: _identificationEntries.length,
+              itemCount: _educationEntries.length,
               padding: EdgeInsets.all(16),
               itemBuilder: (context, index) {
-                final identification = _identificationEntries[index];
-                return _buildIdentificationCard(identification);
+                final education = _educationEntries[index];
+                return _buildEducationCard(education);
               },
             ),
           ),
         ],
       ),
-      floatingActionButton: _identificationEntries.isNotEmpty
+      floatingActionButton: _educationEntries.isNotEmpty
           ? FloatingActionButton(
-        onPressed: _showAddIdentificationDialog,
-        backgroundColor: Colors.teal,
+        onPressed: _showAddEducationDialog,
+        backgroundColor: Colors.purple,
         child: Icon(Icons.add),
       )
           : null,
@@ -685,12 +674,9 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  Widget _buildIdentificationCard(Map<String, dynamic> identification) {
-    final validityStatus = _getValidityStatus(identification);
-    final isExpired = validityStatus == 'Expired';
-
+  Widget _buildEducationCard(Map<String, dynamic> education) {
     return GestureDetector(
-      onTap: () => _showIdentificationDetails(identification),
+      onTap: () => _showEducationDetails(education),
       child: Container(
         margin: EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -709,147 +695,69 @@ class _IdentificationPageState extends State<IdentificationPage> {
           leading: Container(
             padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.teal.withOpacity(0.1),
+              color: Colors.purple.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(
-              _getCardTypeIcon(identification['cardName']),
-              style: TextStyle(fontSize: 24),
-            ),
+            child: Icon(Icons.school, color: Colors.purple),
           ),
           title: Text(
-            identification['cardName'],
+            education['degree'],
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 4),
-              Text(
-                'Card No: ${_maskCardNumber(identification['cardNumber'])}',
-                style: TextStyle(fontFamily: 'monospace'),
-              ),
+              Text(education['institution']),
               SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.event,
-                    size: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    identification['hasNoExpiry']
-                        ? 'No Expiry'
-                        : 'Expires: ${identification['expiryDate']}',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              Text(
+                '${education['startDate']} - ${education['isCurrentlyStudying'] ? 'Present' : education['endDate']}',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
             ],
           ),
-          trailing: Container(
+          trailing: education['isCurrentlyStudying']
+              ? Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: isExpired
-                  ? Colors.red.withOpacity(0.1)
-                  : Colors.green.withOpacity(0.1),
+              color: Colors.green.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              validityStatus,
+              'Current',
               style: TextStyle(
-                color: isExpired ? Colors.red : Colors.green,
+                color: Colors.green,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
             ),
-          ),
+          )
+              : null,
         ),
       ),
     );
   }
 
-  String _maskCardNumber(String cardNumber) {
-    if (cardNumber.length <= 4) return cardNumber;
-    final visible = cardNumber.substring(cardNumber.length - 4);
-    return 'XXXX-XXXX-${visible}';
+  String _calculateYearsOfEducation() {
+    // Simple calculation - can be enhanced for more accuracy
+    return _educationEntries.isNotEmpty ? "${_educationEntries.length * 2}+" : "0";
   }
 
-  String _calculateExpiringCards() {
-    // Count cards expiring in next 3 months
-    if (_identificationEntries.isEmpty) return "0";
+  String _calculateHighestDegree() {
+    if (_educationEntries.isEmpty) return "None";
 
-    int count = 0;
-    final now = DateTime.now();
-    final threeMonthsLater = DateTime(now.year, now.month + 3, now.day);
+    // Simple logic to determine highest degree
+    // This can be enhanced with more sophisticated logic
+    final degrees = _educationEntries.map((e) => e['degree'] as String).toList();
 
-    for (var card in _identificationEntries) {
-      if (card['hasNoExpiry']) continue;
-
-      try {
-        final expiry = card['expiryDate'].toString();
-        if (expiry == 'No Expiry') continue;
-
-        final parts = expiry.split('/');
-        if (parts.length < 3) continue;
-
-        final expiryDate = DateTime(
-            int.parse(parts[2]),
-            int.parse(parts[1]),
-            int.parse(parts[0])
-        );
-
-        if (expiryDate.isAfter(now) && expiryDate.isBefore(threeMonthsLater)) {
-          count++;
-        }
-      } catch (e) {
-        continue;
-      }
+    if (degrees.any((d) => d.toLowerCase().contains('phd') || d.toLowerCase().contains('doctorate'))) {
+      return "PhD";
+    } else if (degrees.any((d) => d.toLowerCase().contains('master'))) {
+      return "Masters";
+    } else if (degrees.any((d) => d.toLowerCase().contains('bachelor'))) {
+      return "Bachelor";
+    } else {
+      return "Other";
     }
-
-    return count.toString();
-  }
-
-  String _calculateValidCards() {
-    if (_identificationEntries.isEmpty) return "0";
-
-    int count = 0;
-    final now = DateTime.now();
-
-    for (var card in _identificationEntries) {
-      if (card['hasNoExpiry']) {
-        count++;
-        continue;
-      }
-
-      try {
-        final expiry = card['expiryDate'].toString();
-        if (expiry == 'No Expiry') {
-          count++;
-          continue;
-        }
-
-        final parts = expiry.split('/');
-        if (parts.length < 3) continue;
-
-        final expiryDate = DateTime(
-            int.parse(parts[2]),
-            int.parse(parts[1]),
-            int.parse(parts[0])
-        );
-
-        if (expiryDate.isAfter(now)) {
-          count++;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-
-    return count.toString();
   }
 }

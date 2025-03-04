@@ -2,49 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-class IdentificationPage extends StatefulWidget {
+class EmergencyPage extends StatefulWidget {
   final String uid;
 
-  const IdentificationPage({Key? key, required this.uid}) : super(key: key);
+  const EmergencyPage({Key? key, required this.uid}) : super(key: key);
 
   @override
-  _IdentificationPageState createState() => _IdentificationPageState();
+  _EmergencyPageState createState() => _EmergencyPageState();
 }
 
-class _IdentificationPageState extends State<IdentificationPage> {
+class _EmergencyPageState extends State<EmergencyPage> {
   final _formKey = GlobalKey<FormState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Form controllers
-  final TextEditingController _cardNameController = TextEditingController();
-  final TextEditingController _cardNumberController = TextEditingController();
-  final TextEditingController _issueDateController = TextEditingController();
-  final TextEditingController _expiryDateController = TextEditingController();
-  final TextEditingController _issuingAuthorityController = TextEditingController();
-  final TextEditingController _additionalInfoController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _relationshipController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
 
-  bool _hasNoExpiry = false;
-  List<Map<String, dynamic>> _identificationEntries = [];
+  List<Map<String, dynamic>> _emergencyContacts = [];
   bool _isLoading = true;
+  bool _isPrimaryContact = false;
 
   @override
   void initState() {
     super.initState();
-    _loadIdentificationData();
+    _loadEmergencyContacts();
   }
 
   @override
   void dispose() {
-    _cardNameController.dispose();
-    _cardNumberController.dispose();
-    _issueDateController.dispose();
-    _expiryDateController.dispose();
-    _issuingAuthorityController.dispose();
-    _additionalInfoController.dispose();
+    _nameController.dispose();
+    _relationshipController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadIdentificationData() async {
+  Future<void> _loadEmergencyContacts() async {
     setState(() {
       _isLoading = true;
     });
@@ -53,42 +53,27 @@ class _IdentificationPageState extends State<IdentificationPage> {
       final docSnapshot = await _firestore
           .collection('users')
           .doc(widget.uid)
-          .collection('identification')
+          .collection('emergency_contacts')
           .get();
 
-      final List<Map<String, dynamic>> entries = [];
+      final List<Map<String, dynamic>> contacts = [];
 
       for (var doc in docSnapshot.docs) {
-        entries.add({
+        contacts.add({
           'id': doc.id,
           ...doc.data(),
         });
       }
 
       setState(() {
-        _identificationEntries = entries;
+        _emergencyContacts = contacts;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      _showErrorSnackBar('Error loading identification data');
-    }
-  }
-
-  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1950),
-      lastDate: DateTime(2101),
-    );
-
-    if (picked != null) {
-      setState(() {
-        controller.text = DateFormat('dd/MM/yyyy').format(picked);
-      });
+      _showErrorSnackBar('Error loading emergency contacts');
     }
   }
 
@@ -101,53 +86,70 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  Future<void> _saveIdentification() async {
+  Future<void> _saveEmergencyContact() async {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      final identification = {
-        'cardName': _cardNameController.text,
-        'cardNumber': _cardNumberController.text,
-        'issueDate': _issueDateController.text,
-        'expiryDate': _hasNoExpiry ? 'No Expiry' : _expiryDateController.text,
-        'hasNoExpiry': _hasNoExpiry,
-        'issuingAuthority': _issuingAuthorityController.text,
-        'additionalInfo': _additionalInfoController.text,
+      // If setting as primary, update all other contacts to not be primary
+      if (_isPrimaryContact) {
+        final batch = _firestore.batch();
+        final contacts = await _firestore
+            .collection('users')
+            .doc(widget.uid)
+            .collection('emergency_contacts')
+            .where('isPrimary', isEqualTo: true)
+            .get();
+
+        for (var doc in contacts.docs) {
+          batch.update(doc.reference, {'isPrimary': false});
+        }
+
+        await batch.commit();
+      }
+
+      final contact = {
+        'name': _nameController.text,
+        'relationship': _relationshipController.text,
+        'phone': _phoneController.text,
+        'email': _emailController.text,
+        'address': _addressController.text,
+        'notes': _notesController.text,
+        'isPrimary': _isPrimaryContact,
         'timestamp': FieldValue.serverTimestamp(),
       };
 
       await _firestore
           .collection('users')
           .doc(widget.uid)
-          .collection('identification')
-          .add(identification);
+          .collection('emergency_contacts')
+          .add(contact);
 
       _resetForm();
-      _loadIdentificationData();
+      _loadEmergencyContacts();
 
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Identification card saved successfully'),
+          content: Text('Emergency contact saved successfully'),
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
-      _showErrorSnackBar('Error saving identification data');
+      _showErrorSnackBar('Error saving emergency contact');
     }
   }
 
   void _resetForm() {
-    _cardNameController.clear();
-    _cardNumberController.clear();
-    _issueDateController.clear();
-    _expiryDateController.clear();
-    _issuingAuthorityController.clear();
-    _additionalInfoController.clear();
-    _hasNoExpiry = false;
+    _nameController.clear();
+    _relationshipController.clear();
+    _phoneController.clear();
+    _emailController.clear();
+    _addressController.clear();
+    _notesController.clear();
+    _isPrimaryContact = false;
   }
 
-  void _showAddIdentificationDialog() {
+  void _showAddContactDialog() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -184,7 +186,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 ),
                 SizedBox(height: 20),
                 Text(
-                  'Add Identification Card',
+                  'Add Emergency Contact',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -192,131 +194,118 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 ),
                 SizedBox(height: 20),
                 TextFormField(
-                  controller: _cardNameController,
+                  controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Card Type',
-                    hintText: 'Aadhar Card, PAN Card, etc.',
+                    labelText: 'Full Name',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.badge),
+                    prefixIcon: Icon(Icons.person),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter card type';
+                      return 'Please enter contact name';
                     }
                     return null;
                   },
                 ),
                 SizedBox(height: 15),
                 TextFormField(
-                  controller: _cardNumberController,
+                  controller: _relationshipController,
                   decoration: InputDecoration(
-                    labelText: 'Card Number',
+                    labelText: 'Relationship',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.numbers),
+                    prefixIcon: Icon(Icons.people),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter card number';
+                      return 'Please enter relationship';
                     }
                     return null;
                   },
                 ),
                 SizedBox(height: 15),
                 TextFormField(
-                  controller: _issuingAuthorityController,
+                  controller: _phoneController,
                   decoration: InputDecoration(
-                    labelText: 'Issuing Authority',
+                    labelText: 'Phone Number',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.account_balance),
+                    prefixIcon: Icon(Icons.phone),
                   ),
-                ),
-                SizedBox(height: 15),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _issueDateController,
-                        decoration: InputDecoration(
-                          labelText: 'Issue Date',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          prefixIcon: Icon(Icons.calendar_today),
-                        ),
-                        readOnly: true,
-                        onTap: () => _selectDate(context, _issueDateController),
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _expiryDateController,
-                        decoration: InputDecoration(
-                          labelText: 'Expiry Date',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          prefixIcon: Icon(Icons.calendar_today),
-                        ),
-                        readOnly: true,
-                        enabled: !_hasNoExpiry,
-                        onTap: () => _selectDate(context, _expiryDateController),
-                        validator: (value) {
-                          if (!_hasNoExpiry && (value == null || value.isEmpty)) {
-                            return 'Please select expiry date';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _hasNoExpiry,
-                      onChanged: (value) {
-                        setState(() {
-                          _hasNoExpiry = value ?? false;
-                          if (_hasNoExpiry) {
-                            _expiryDateController.clear();
-                          }
-                        });
-                      },
-                    ),
-                    Text('No Expiry Date'),
-                  ],
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter phone number';
+                    }
+                    return null;
+                  },
                 ),
                 SizedBox(height: 15),
                 TextFormField(
-                  controller: _additionalInfoController,
+                  controller: _emailController,
                   decoration: InputDecoration(
-                    labelText: 'Additional Information',
+                    labelText: 'Email Address',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(Icons.info_outline),
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                SizedBox(height: 15),
+                TextFormField(
+                  controller: _addressController,
+                  decoration: InputDecoration(
+                    labelText: 'Address',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    prefixIcon: Icon(Icons.home),
+                  ),
+                  maxLines: 2,
+                ),
+                SizedBox(height: 15),
+                TextFormField(
+                  controller: _notesController,
+                  decoration: InputDecoration(
+                    labelText: 'Additional Notes',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    prefixIcon: Icon(Icons.note),
                   ),
                   maxLines: 3,
                 ),
+                SizedBox(height: 15),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _isPrimaryContact,
+                      onChanged: (value) {
+                        setState(() {
+                          _isPrimaryContact = value ?? false;
+                        });
+                      },
+                    ),
+                    Text('Set as Primary Emergency Contact'),
+                  ],
+                ),
                 SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: _saveIdentification,
+                  onPressed: _saveEmergencyContact,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text('Save Identification Card'),
+                  child: Text('Save Contact'),
                 ),
                 SizedBox(height: 20),
               ],
@@ -327,25 +316,42 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  void _showIdentificationDetails(Map<String, dynamic> identification) {
+  void _showContactDetails(Map<String, dynamic> contact) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${identification['cardName']}'),
+        title: Text('${contact['name']}'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _detailRow(Icons.numbers, 'Card Number', identification['cardNumber']),
-              _detailRow(Icons.account_balance, 'Issuing Authority',
-                  identification['issuingAuthority'] ?? 'Not specified'),
-              _detailRow(Icons.calendar_today, 'Issue Date',
-                  identification['issueDate'] ?? 'Not specified'),
-              _detailRow(Icons.event_busy, 'Expiry Date',
-                  identification['hasNoExpiry'] ? 'No Expiry' : identification['expiryDate']),
-              if (identification['additionalInfo'] != null && identification['additionalInfo'].isNotEmpty)
-                _detailRow(Icons.info_outline, 'Additional Info', identification['additionalInfo']),
+              _detailRow(Icons.people, 'Relationship', contact['relationship']),
+              _detailRow(Icons.phone, 'Phone', contact['phone']),
+              if (contact['email'] != null && contact['email'].isNotEmpty)
+                _detailRow(Icons.email, 'Email', contact['email']),
+              if (contact['address'] != null && contact['address'].isNotEmpty)
+                _detailRow(Icons.home, 'Address', contact['address']),
+              if (contact['notes'] != null && contact['notes'].isNotEmpty)
+                _detailRow(Icons.note, 'Notes', contact['notes']),
+              if (contact['isPrimary'] != null && contact['isPrimary'])
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'Primary Contact',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -357,7 +363,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteIdentificationEntry(identification['id']);
+              _deleteContact(contact['id']);
             },
             child: Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -372,7 +378,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: Colors.teal.shade700),
+          Icon(icon, size: 20, color: Colors.red.shade700),
           SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -399,57 +405,25 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  Future<void> _deleteIdentificationEntry(String id) async {
+  Future<void> _deleteContact(String id) async {
     try {
       await _firestore
           .collection('users')
           .doc(widget.uid)
-          .collection('identification')
+          .collection('emergency_contacts')
           .doc(id)
           .delete();
 
-      _loadIdentificationData();
+      _loadEmergencyContacts();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Identification card deleted'),
+          content: Text('Emergency contact deleted'),
           backgroundColor: Colors.red,
         ),
       );
     } catch (e) {
-      _showErrorSnackBar('Error deleting identification card');
-    }
-  }
-
-  String _getCardTypeIcon(String cardName) {
-    final cardNameLower = cardName.toLowerCase();
-    if (cardNameLower.contains('aadhar')) return '🆔';
-    if (cardNameLower.contains('pan')) return '💳';
-    if (cardNameLower.contains('passport')) return '🛂';
-    if (cardNameLower.contains('license') || cardNameLower.contains('driving')) return '🚗';
-    if (cardNameLower.contains('voter')) return '🗳️';
-    return '📄';
-  }
-
-  String _getValidityStatus(Map<String, dynamic> card) {
-    if (card['hasNoExpiry']) return 'Valid';
-
-    try {
-      final expiry = card['expiryDate'].toString();
-      if (expiry == 'No Expiry') return 'Valid';
-
-      final parts = expiry.split('/');
-      if (parts.length < 3) return 'Unknown';
-
-      final expiryDate = DateTime(
-          int.parse(parts[2]),
-          int.parse(parts[1]),
-          int.parse(parts[0])
-      );
-
-      return DateTime.now().isAfter(expiryDate) ? 'Expired' : 'Valid';
-    } catch (e) {
-      return 'Unknown';
+      _showErrorSnackBar('Error deleting contact');
     }
   }
 
@@ -457,9 +431,9 @@ class _IdentificationPageState extends State<IdentificationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.red,
         elevation: 0,
-        title: Text('Identification Cards'),
+        title: Text('Emergency Contacts'),
         actions: [
           IconButton(
             icon: Icon(Icons.help_outline),
@@ -467,9 +441,9 @@ class _IdentificationPageState extends State<IdentificationPage> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: Text('About Identification Cards'),
+                  title: Text('About Emergency Contacts'),
                   content: Text(
-                      'Store your identification cards such as Aadhar Card, PAN Card, Passport, Driving License, etc. This helps you keep track of your important documents and their expiry dates.'
+                      'Add emergency contacts who should be notified in case of emergencies. You can set one contact as your primary emergency contact. Make sure to provide accurate information for quick access during emergencies.'
                   ),
                   actions: [
                     TextButton(
@@ -490,7 +464,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
             height: 150,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.teal,
+              color: Colors.red,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
@@ -502,7 +476,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                   right: 20,
                   bottom: 20,
                   child: Icon(
-                    Icons.badge,
+                    Icons.emergency,
                     size: 80,
                     color: Colors.white.withOpacity(0.3),
                   ),
@@ -513,7 +487,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Your Identification Cards',
+                        'Emergency Information',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -522,7 +496,7 @@ class _IdentificationPageState extends State<IdentificationPage> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Keep track of your important documents',
+                        'Add contacts for emergency situations',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
                           fontSize: 16,
@@ -555,21 +529,21 @@ class _IdentificationPageState extends State<IdentificationPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildStatColumn(
-                    Icons.badge_outlined,
-                    _identificationEntries.length.toString(),
-                    'Cards',
-                    Colors.teal,
+                    Icons.contacts,
+                    _emergencyContacts.length.toString(),
+                    'Contacts',
+                    Colors.red,
                   ),
                   _buildStatColumn(
-                    Icons.warning_amber_outlined,
-                    _calculateExpiringCards(),
-                    'Expiring',
-                    Colors.orange,
+                    Icons.star,
+                    _hasPrimaryContact() ? "1" : "0",
+                    'Primary',
+                    Colors.amber,
                   ),
                   _buildStatColumn(
-                    Icons.verified_outlined,
-                    _calculateValidCards(),
-                    'Valid',
+                    Icons.phone_in_talk,
+                    _calculateCompleteContacts().toString(),
+                    'Complete',
                     Colors.green,
                   ),
                 ],
@@ -584,38 +558,38 @@ class _IdentificationPageState extends State<IdentificationPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Your Documents',
+                  'Contact List',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: _showAddIdentificationDialog,
-                  icon: Icon(Icons.add, color: Colors.teal),
-                  label: Text('Add New', style: TextStyle(color: Colors.teal)),
+                  onPressed: _showAddContactDialog,
+                  icon: Icon(Icons.add, color: Colors.red),
+                  label: Text('Add New', style: TextStyle(color: Colors.red)),
                 ),
               ],
             ),
           ),
 
-          // List of identification entries
+          // List of emergency contacts
           Expanded(
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
-                : _identificationEntries.isEmpty
+                : _emergencyContacts.isEmpty
                 ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.badge_outlined,
+                    Icons.contacts_outlined,
                     size: 70,
                     color: Colors.grey.shade400,
                   ),
                   SizedBox(height: 20),
                   Text(
-                    'No identification cards added yet',
+                    'No emergency contacts added yet',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey.shade600,
@@ -623,11 +597,11 @@ class _IdentificationPageState extends State<IdentificationPage> {
                   ),
                   SizedBox(height: 10),
                   ElevatedButton.icon(
-                    onPressed: _showAddIdentificationDialog,
+                    onPressed: _showAddContactDialog,
                     icon: Icon(Icons.add),
-                    label: Text('Add ID Card'),
+                    label: Text('Add Contact'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -635,20 +609,20 @@ class _IdentificationPageState extends State<IdentificationPage> {
               ),
             )
                 : ListView.builder(
-              itemCount: _identificationEntries.length,
+              itemCount: _emergencyContacts.length,
               padding: EdgeInsets.all(16),
               itemBuilder: (context, index) {
-                final identification = _identificationEntries[index];
-                return _buildIdentificationCard(identification);
+                final contact = _emergencyContacts[index];
+                return _buildContactCard(contact);
               },
             ),
           ),
         ],
       ),
-      floatingActionButton: _identificationEntries.isNotEmpty
+      floatingActionButton: _emergencyContacts.isNotEmpty
           ? FloatingActionButton(
-        onPressed: _showAddIdentificationDialog,
-        backgroundColor: Colors.teal,
+        onPressed: _showAddContactDialog,
+        backgroundColor: Colors.red,
         child: Icon(Icons.add),
       )
           : null,
@@ -685,12 +659,9 @@ class _IdentificationPageState extends State<IdentificationPage> {
     );
   }
 
-  Widget _buildIdentificationCard(Map<String, dynamic> identification) {
-    final validityStatus = _getValidityStatus(identification);
-    final isExpired = validityStatus == 'Expired';
-
+  Widget _buildContactCard(Map<String, dynamic> contact) {
     return GestureDetector(
-      onTap: () => _showIdentificationDetails(identification),
+      onTap: () => _showContactDetails(contact),
       child: Container(
         margin: EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -709,147 +680,62 @@ class _IdentificationPageState extends State<IdentificationPage> {
           leading: Container(
             padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.teal.withOpacity(0.1),
+              color: Colors.red.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(
-              _getCardTypeIcon(identification['cardName']),
-              style: TextStyle(fontSize: 24),
-            ),
+            child: Icon(Icons.person, color: Colors.red),
           ),
           title: Text(
-            identification['cardName'],
+            contact['name'],
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 4),
-              Text(
-                'Card No: ${_maskCardNumber(identification['cardNumber'])}',
-                style: TextStyle(fontFamily: 'monospace'),
-              ),
+              Text(contact['relationship']),
               SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.event,
-                    size: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    identification['hasNoExpiry']
-                        ? 'No Expiry'
-                        : 'Expires: ${identification['expiryDate']}',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              Text(
+                contact['phone'],
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
             ],
           ),
-          trailing: Container(
+          trailing: contact['isPrimary'] == true
+              ? Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: isExpired
-                  ? Colors.red.withOpacity(0.1)
-                  : Colors.green.withOpacity(0.1),
+              color: Colors.red.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              validityStatus,
+              'Primary',
               style: TextStyle(
-                color: isExpired ? Colors.red : Colors.green,
+                color: Colors.red,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
             ),
-          ),
+          )
+              : null,
         ),
       ),
     );
   }
 
-  String _maskCardNumber(String cardNumber) {
-    if (cardNumber.length <= 4) return cardNumber;
-    final visible = cardNumber.substring(cardNumber.length - 4);
-    return 'XXXX-XXXX-${visible}';
+  bool _hasPrimaryContact() {
+    return _emergencyContacts.any((contact) => contact['isPrimary'] == true);
   }
 
-  String _calculateExpiringCards() {
-    // Count cards expiring in next 3 months
-    if (_identificationEntries.isEmpty) return "0";
-
-    int count = 0;
-    final now = DateTime.now();
-    final threeMonthsLater = DateTime(now.year, now.month + 3, now.day);
-
-    for (var card in _identificationEntries) {
-      if (card['hasNoExpiry']) continue;
-
-      try {
-        final expiry = card['expiryDate'].toString();
-        if (expiry == 'No Expiry') continue;
-
-        final parts = expiry.split('/');
-        if (parts.length < 3) continue;
-
-        final expiryDate = DateTime(
-            int.parse(parts[2]),
-            int.parse(parts[1]),
-            int.parse(parts[0])
-        );
-
-        if (expiryDate.isAfter(now) && expiryDate.isBefore(threeMonthsLater)) {
-          count++;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-
-    return count.toString();
-  }
-
-  String _calculateValidCards() {
-    if (_identificationEntries.isEmpty) return "0";
-
-    int count = 0;
-    final now = DateTime.now();
-
-    for (var card in _identificationEntries) {
-      if (card['hasNoExpiry']) {
-        count++;
-        continue;
-      }
-
-      try {
-        final expiry = card['expiryDate'].toString();
-        if (expiry == 'No Expiry') {
-          count++;
-          continue;
-        }
-
-        final parts = expiry.split('/');
-        if (parts.length < 3) continue;
-
-        final expiryDate = DateTime(
-            int.parse(parts[2]),
-            int.parse(parts[1]),
-            int.parse(parts[0])
-        );
-
-        if (expiryDate.isAfter(now)) {
-          count++;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-
-    return count.toString();
+  int _calculateCompleteContacts() {
+    // A contact is considered complete if it has name, relationship, phone
+    return _emergencyContacts.where((contact) =>
+    contact['name'] != null &&
+        contact['name'].isNotEmpty &&
+        contact['relationship'] != null &&
+        contact['relationship'].isNotEmpty &&
+        contact['phone'] != null &&
+        contact['phone'].isNotEmpty
+    ).length;
   }
 }

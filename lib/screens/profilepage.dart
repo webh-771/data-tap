@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class ProfilePage extends StatefulWidget {
-  final String uid; // User's UID passed after login
+  final String uid;
 
-  const ProfilePage({super.key, required this.uid});
+  const ProfilePage({Key? key, required this.uid}) : super(key: key);
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
@@ -12,96 +14,511 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _dobController = TextEditingController();
-  String _selectedGender = 'Male'; // Default selection
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Function to save profile details in Firestore
-  Future<void> _saveProfileDetails() async {
+  // Form controllers
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _headlineController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _websiteController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _birthdayController = TextEditingController();
+  final TextEditingController _profileImageUrlController = TextEditingController();
+
+  bool _isLoading = true;
+  Map<String, dynamic> _profileData = {};
+  String? _profileImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _headlineController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _locationController.dispose();
+    _websiteController.dispose();
+    _bioController.dispose();
+    _birthdayController.dispose();
+    _profileImageUrlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProfileData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final profileData = {
-        'Full Name': _nameController.text.trim(),
-        'Email': _emailController.text.trim(),
-        'Phone': _phoneController.text.trim(),
-        'Address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(), // Nullable
-        'DateOfBirth': _dobController.text.trim(),
-        'Gender': _selectedGender,
-        'Updated At': FieldValue.serverTimestamp(),
+      final docSnapshot = await _firestore
+          .collection('users')
+          .doc(widget.uid)
+          .get();
+
+      if (docSnapshot.exists) {
+        setState(() {
+          _profileData = docSnapshot.data() ?? {};
+          _profileImageUrl = _profileData['profileImageUrl'];
+          _profileImageUrlController.text = _profileData['profileImageUrl'] ?? '';
+          _fullNameController.text = _profileData['fullName'] ?? '';
+          _headlineController.text = _profileData['headline'] ?? '';
+          _phoneController.text = _profileData['phone'] ?? '';
+          _emailController.text = _profileData['email'] ?? '';
+          _locationController.text = _profileData['location'] ?? '';
+          _websiteController.text = _profileData['website'] ?? '';
+          _bioController.text = _profileData['bio'] ?? '';
+          _birthdayController.text = _profileData['birthday'] ?? '';
+        });
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorSnackBar('Error loading profile data');
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(Duration(days: 365 * 18)), // Default to 18 years ago
+      firstDate: DateTime(1940),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _birthdayController.text = "${picked.day}/${picked.month}/${picked.year}";
+      });
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showImageUrlDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Update Profile Picture'),
+        content: TextField(
+          controller: _profileImageUrlController,
+          decoration: InputDecoration(
+            hintText: 'Enter image URL',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _profileImageUrl = _profileImageUrlController.text;
+              });
+              Navigator.pop(context);
+            },
+            child: Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final profile = {
+        'fullName': _fullNameController.text,
+        'headline': _headlineController.text,
+        'phone': _phoneController.text,
+        'email': _emailController.text,
+        'location': _locationController.text,
+        'website': _websiteController.text,
+        'bio': _bioController.text,
+        'birthday': _birthdayController.text,
+        'profileImageUrl': _profileImageUrlController.text,
+        'lastUpdated': FieldValue.serverTimestamp(),
       };
 
-      await FirebaseFirestore.instance
-          .collection('user_profiles')
-          .doc(widget.uid) // Use UID as the primary key
-          .set(profileData, SetOptions(merge: true));
+      await _firestore
+          .collection('users')
+          .doc(widget.uid)
+          .set(profile, SetOptions(merge: true));
+
+      setState(() {
+        _profileData = profile;
+        _isLoading = false;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Profile details saved successfully!')),
+        SnackBar(
+          content: Text('Profile updated successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving profile: $e')),
-      );
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorSnackBar('Error saving profile data');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue.shade900,
       appBar: AppBar(
-        title: Text('Profile Page'),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.purple,
         elevation: 0,
+        title: Text('My Profile'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.help_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('About Profile Information'),
+                  content: Text(
+                      'This section contains your basic personal information. Keep your profile updated to ensure others can easily connect with you.'
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         child: Column(
           children: [
-            // Glassmorphic Card UI
-            Card(
-              color: Colors.white.withOpacity(0.1),
-              elevation: 10,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      _buildTextField(_nameController, 'Full Name', Icons.person),
-                      _buildTextField(_emailController, 'Email', Icons.email),
-                      _buildTextField(_phoneController, 'Phone', Icons.phone, isNumeric: true),
-                      _buildTextField(_addressController, 'Address (Optional)', Icons.home),
-                      _buildDateField(),
-                      _buildGenderDropdown(),
-                      SizedBox(height: 20),
-
-                      // Modern Save Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              _saveProfileDetails();
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 14),
-                            backgroundColor: Colors.blueAccent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                          ),
-                          child: Text(
-                            'Save Profile',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            // Header with profile image
+            Container(
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.purple,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: _showImageUrlDialog,
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
+                          backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                              ? NetworkImage(_profileImageUrl!) as ImageProvider
+                              : AssetImage('assets/default_profile.png') as ImageProvider,
+                          child: _profileImageUrl == null || _profileImageUrl!.isEmpty
+                              ? Icon(Icons.person, size: 50, color: Colors.grey)
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.edit,
+                              color: Colors.purple,
+                              size: 20,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  SizedBox(height: 10),
+                  Text(
+                    _profileData['fullName'] ?? 'Your Name',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    _profileData['headline'] ?? 'Add your professional headline',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Profile Completion Card
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Profile Completion',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${_calculateProfileCompletion()}%',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.purple,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: _calculateProfileCompletion() / 100,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Profile form
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Personal Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 20),
+
+                    // Full Name
+                    TextFormField(
+                      controller: _fullNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Full Name',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: Icon(Icons.person),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your name';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 15),
+
+                    // Professional Headline
+                    TextFormField(
+                      controller: _headlineController,
+                      decoration: InputDecoration(
+                        labelText: 'Professional Headline',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: Icon(Icons.work),
+                      ),
+                    ),
+                    SizedBox(height: 15),
+
+                    // Phone Number
+                    TextFormField(
+                      controller: _phoneController,
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: Icon(Icons.phone),
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    SizedBox(height: 15),
+
+                    // Email
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email Address',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: Icon(Icons.email),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Please enter a valid email';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 15),
+
+                    // Location
+                    TextFormField(
+                      controller: _locationController,
+                      decoration: InputDecoration(
+                        labelText: 'Location',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: Icon(Icons.location_on),
+                      ),
+                    ),
+                    SizedBox(height: 15),
+
+                    // Website
+                    TextFormField(
+                      controller: _websiteController,
+                      decoration: InputDecoration(
+                        labelText: 'Website or Portfolio',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: Icon(Icons.link),
+                      ),
+                      keyboardType: TextInputType.url,
+                    ),
+                    SizedBox(height: 15),
+
+                    // Birthday
+                    TextFormField(
+                      controller: _birthdayController,
+                      decoration: InputDecoration(
+                        labelText: 'Birthday',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: Icon(Icons.cake),
+                      ),
+                      readOnly: true,
+                      onTap: () => _selectDate(context),
+                    ),
+                    SizedBox(height: 15),
+
+                    // Bio
+                    TextFormField(
+                      controller: _bioController,
+                      decoration: InputDecoration(
+                        labelText: 'Bio',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: Icon(Icons.description),
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 5,
+                    ),
+                    SizedBox(height: 15),
+
+                    // Profile Image URL (hidden in main form, accessible via dialog)
+                    Opacity(
+                      opacity: 0,
+                      child: TextFormField(
+                        controller: _profileImageUrlController,
+                        enabled: false,
+                      ),
+                    ),
+
+                    SizedBox(height: 30),
+
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _saveProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text(
+                          'Save Profile',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 30),
+                  ],
                 ),
               ),
             ),
@@ -111,128 +528,19 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Text field builder
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumeric = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-        style: TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          prefixIcon: Icon(icon, color: Colors.white70),
-          labelText: label,
-          labelStyle: TextStyle(color: Colors.white70),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.white54),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.blueAccent),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          filled: true,
-          fillColor: Colors.white.withOpacity(0.1),
-        ),
-        validator: (value) {
-          if (label == 'Email' && value != null && !RegExp(r"^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$").hasMatch(value)) {
-            return 'Enter a valid email';
-          }
-          if (label == 'Phone' && value != null && value.length != 10) {
-            return 'Enter a valid 10-digit phone number';
-          }
-          if (label != 'Address (Optional)' && (value == null || value.isEmpty)) {
-            return 'Please enter $label';
-          }
-          return null;
-        },
-      ),
-    );
-  }
+  int _calculateProfileCompletion() {
+    int totalFields = 8; // Total number of profile fields we're tracking
+    int completedFields = 0;
 
-  // Date Picker for Date of Birth
-  Widget _buildDateField() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: TextFormField(
-        controller: _dobController,
-        readOnly: true,
-        style: TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          prefixIcon: Icon(Icons.calendar_today, color: Colors.white70),
-          labelText: 'Date of Birth',
-          labelStyle: TextStyle(color: Colors.white70),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.white54),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.blueAccent),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          filled: true,
-          fillColor: Colors.white.withOpacity(0.1),
-        ),
-        validator: (value) => value == null || value.isEmpty ? 'Please select Date of Birth' : null,
-        onTap: () async {
-          DateTime? pickedDate = await showDatePicker(
-            context: context,
-            initialDate: DateTime(2000),
-            firstDate: DateTime(1900),
-            lastDate: DateTime.now(),
-            builder: (context, child) {
-              return Theme(
-                data: ThemeData.dark().copyWith(
-                  primaryColor: Colors.blueAccent,
-                  hintColor: Colors.blueAccent,
-                  colorScheme: ColorScheme.dark(primary: Colors.blueAccent),
-                  dialogBackgroundColor: Colors.blueGrey.shade900,
-                ),
-                child: child!,
-              );
-            },
-          );
-          if (pickedDate != null) {
-            setState(() {
-              _dobController.text = "${pickedDate.toLocal()}".split(' ')[0]; // Store only the date
-            });
-          }
-        },
-      ),
-    );
-  }
+    if (_fullNameController.text.isNotEmpty) completedFields++;
+    if (_headlineController.text.isNotEmpty) completedFields++;
+    if (_phoneController.text.isNotEmpty) completedFields++;
+    if (_emailController.text.isNotEmpty) completedFields++;
+    if (_locationController.text.isNotEmpty) completedFields++;
+    if (_websiteController.text.isNotEmpty) completedFields++;
+    if (_bioController.text.isNotEmpty) completedFields++;
+    if (_birthdayController.text.isNotEmpty) completedFields++;
 
-  // Gender Dropdown
-  Widget _buildGenderDropdown() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: DropdownButtonFormField<String>(
-        value: _selectedGender,
-        dropdownColor: Colors.blueGrey.shade900,
-        style: TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          prefixIcon: Icon(Icons.wc, color: Colors.white70),
-          labelText: 'Gender',
-          labelStyle: TextStyle(color: Colors.white70),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.white54),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          filled: true,
-          fillColor: Colors.white.withOpacity(0.1),
-        ),
-        items: ['Male', 'Female', 'Other'].map((String gender) {
-          return DropdownMenuItem<String>(
-            value: gender,
-            child: Text(gender),
-          );
-        }).toList(),
-        onChanged: (newValue) {
-          setState(() {
-            _selectedGender = newValue!;
-          });
-        },
-      ),
-    );
+    return ((completedFields / totalFields) * 100).round();
   }
 }
