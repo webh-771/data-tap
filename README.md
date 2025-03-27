@@ -1,16 +1,90 @@
-# learning
+Data Tap - NFC Autofill Card
 
-A new Flutter project.
+Overview
 
-## Getting Started
+Data Tap is an innovative NFC-based autofill solution designed to streamline data entry processes. With a simple tap, users can quickly and securely transfer stored information to compatible devices, eliminating manual input and enhancing efficiency.
 
-This project is a starting point for a Flutter application.
+Features
 
-A few resources to get you started if this is your first Flutter project:
+NFC-powered autofill: Transfer data seamlessly with a single tap.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Secure storage: Encrypt and protect sensitive information.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Customizable fields: Store contact details, login credentials, or any other structured data.
+
+Cross-platform compatibility: Works with NFC-enabled devices and web interfaces.
+
+User-friendly UI: Simple setup and intuitive management of stored data.
+
+
+How It Works
+
+1. Setup your Data Tap card: Register and configure the data you want to store.
+
+
+2. Tap to share: Bring your NFC-enabled device close to the Data Tap card.
+
+
+3. Autofill data: The stored information is securely transferred and autofilled in the required fields.
+
+
+
+Installation & Usage
+
+Prerequisites
+
+NFC-enabled smartphone or device.
+
+Data Tap app (if applicable) installed on your device.
+
+
+Steps
+
+1. Clone the repository:
+
+git clone https://github.com/webh-771/data-tap.git
+cd Data-Tap
+
+
+2. Install dependencies:
+
+npm install  # or pip install -r requirements.txt (depending on tech stack)
+
+
+3. Run the application:
+
+npm start  # or python app.py
+
+
+4. Follow on-screen instructions to configure and use your Data Tap card.
+
+
+
+Technologies Used
+
+Frontend: Flutter
+
+Backend: Firestore
+
+Database: Firebase
+
+Security: AES Encryption for stored data
+
+
+Future Enhancements
+
+Integration with payment systems.
+
+Advanced data sharing options (e.g., selective field sharing).
+
+Cloud backup and multi-device sync.
+
+
+Contribution
+
+Contributions are welcome! Feel free to fork this repository, make changes, and submit a pull request.
+
+Contact
+
+For any queries or support, reach out via vaibhavkapoor.2005@gmail.com 
+
